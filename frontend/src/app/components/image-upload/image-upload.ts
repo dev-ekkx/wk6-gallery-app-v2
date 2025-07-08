@@ -46,8 +46,8 @@ protected imageService = inject(ImageService);
   }
 
   protected removeImage(index: number): void {
-    console.log('Removing image:', this.images());
-    this.images.set(this.images().splice(index, 1));
+    const newImagesList = this.images().filter((_, i) => i !== index);
+    this.images.set(newImagesList);
   }
 
   private processFiles(files: FileList): void {

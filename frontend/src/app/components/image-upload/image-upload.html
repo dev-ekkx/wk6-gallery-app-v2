@@ -11,8 +11,10 @@
   </div>
   <div class="preview-container">
     @for (image of images(); track $index) {
+      <div  class="image-wrapper">
       <img [src]="image.url" class="preview-image" alt="Image Preview">
       <button class="remove-btn" (click)="removeImage($index)" title="Remove Image">×</button>
+      </div>
     }
   </div>
   @if (images().length) {

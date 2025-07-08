@@ -56,6 +56,13 @@
   justify-content: center;
 }
 
+.image-wrapper {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+
 .preview-image {
   width: 100px;
   height: 100px;
