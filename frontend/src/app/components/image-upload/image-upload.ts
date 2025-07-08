@@ -1,4 +1,6 @@
-import {Component, signal} from '@angular/core';
+import {Component, inject, signal} from '@angular/core';
+import {ImageService} from '../../services/image/image';
+import {take} from 'rxjs';
 
 @Component({
   selector: 'app-image-upload',
@@ -7,7 +9,9 @@ import {Component, signal} from '@angular/core';
   styleUrl: './image-upload.css'
 })
 export class ImageUpload {
+protected imageService = inject(ImageService);
   protected images = signal<{ file: File, url: string }[]>([]);
+  protected isUploading = signal(false);
 
   protected onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -61,12 +65,29 @@ export class ImageUpload {
         };
         reader.readAsDataURL(file);
 
+      } else {
+        alert("Only image files are allowed.");
       }
     });
   }
 
   protected uploadToS3(): void {
-    const form = new FormData();
+    this.isUploading.set(true);
+    const imagesArray = this.images().map(image => image.file);
+    console.log(imagesArray);
+this.imageService.uploadImages(imagesArray).pipe(take(1)).subscribe({
+  next: (result) => {
+    console.log('Upload successful:', result);
+    this.images.set([]);
+  },
+  error: (error) => {
+    console.error('Upload failed:', error);
+    alert('Failed to upload images. Please try again.');
+  },
+  complete: () => {
+    this.isUploading.set(false);
+  }
+})
 
   }
 }
