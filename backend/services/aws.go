@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
@@ -19,11 +18,6 @@ var (
 )
 
 func InitAWS() {
-	errr := godotenv.Load()
-	if errr != nil {
-		log.Fatal("Error loading .env file")
-	}
-
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(os.Getenv("AWS_REGION")),
 		Credentials: credentials.NewStaticCredentials(

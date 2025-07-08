@@ -4,7 +4,7 @@ import {ImageUpload} from './components/image-upload/image-upload';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ImageUpload],
+  imports: [ImageUpload],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
