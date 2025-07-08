@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -21,8 +20,8 @@ func InitAWS() {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(os.Getenv("AWS_REGION")),
 		Credentials: credentials.NewStaticCredentials(
-			os.Getenv("AWS_ACCESS_KEY_ID"),
-			os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			os.Getenv("S3_ACCESS_KEY"),
+			os.Getenv("S3_SECRET_KEY"),
 			"",
 		),
 	})
@@ -31,40 +30,41 @@ func InitAWS() {
 	}
 
 	s3Client = s3.New(sess)
-	bucketName = os.Getenv("AWS_BUCKET")
+	bucketName = os.Getenv("S3_BUCKET_NAME")
 }
 
 func UploadImages(c *gin.Context) {
 	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid multipart form"})
 		return
 	}
 
-	files := form.File["images"] // "images" is the field name
-	var urls []string
+	files := form.File["images"]
 
 	for _, file := range files {
-		src, err := file.Open()
+		f, err := file.Open()
 		if err != nil {
-			continue
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+			return
 		}
-		defer src.Close()
+		defer f.Close()
 
-		key := file.Filename
+		key := "uploads/" + file.Filename
 
 		_, err = s3Client.PutObject(&s3.PutObjectInput{
 			Bucket:      aws.String(bucketName),
 			Key:         aws.String(key),
-			Body:        src,
+			Body:        f,
 			ContentType: aws.String(file.Header.Get("Content-Type")),
-			ACL:         aws.String("public-read"),
 		})
-		if err == nil {
-			url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, key)
-			urls = append(urls, url)
+
+		if err != nil {
+			log.Println("S3 upload error:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"S3 upload error: ": err})
+			return
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"uploaded": urls})
+	c.JSON(http.StatusOK, gin.H{"message": "Uploaded successfully"})
 }
