@@ -1,26 +1,5 @@
 <!--<router-outlet />-->
 
-<h2 style="margin-bottom: 2rem">Full stack gallery application</h2>
+<h2 style="margin-bottom: 2rem; width: max-content; margin-inline: auto">Gallery application</h2>
 
-<div class="upload-container">
-  <h1>Upload Your Images</h1>
-  <div class="drop-zone"
-       (dragover)="onDragOver($event)"
-       (dragleave)="onDragLeave($event)"
-       (drop)="onDrop($event)">
-    <p>Drag & drop your images here or</p>
-    <label for="file-input" class="upload-btn">Browse Files</label>
-    <input type="file" id="file-input" class="file-input" accept="image/*" multiple
-           (change)="onFileSelected($event)">
-  </div>
-  <div class="preview-container">
-    @for (image of images(); track $index) {
-      <img [src]="image.url" class="preview-image" alt="Image Preview">
-      <button class="remove-btn" (click)="removeImage($index)" title="Remove Image">×</button>
-    }
-  </div>
-@if (images().length) {
-
-  <button class="upload-btn" style="background: #0056b3; margin-top: 2rem" (click)="uploadToS3()">Upload to S3</button>
-}
-</div>
+<app-image-upload />
