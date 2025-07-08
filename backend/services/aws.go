@@ -40,28 +40,37 @@ func InitAWS() {
 	bucketName = os.Getenv("AWS_BUCKET")
 }
 
-func UploadImage(c *gin.Context) {
-	file, header, err := c.Request.FormFile("image")
+func UploadImages(c *gin.Context) {
+	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read file"})
-		return
-	}
-	defer file.Close()
-
-	key := header.Filename
-
-	_, err = s3Client.PutObject(&s3.PutObjectInput{
-		Bucket:      aws.String(bucketName),
-		Key:         aws.String(key),
-		Body:        file,
-		ContentType: aws.String(header.Header.Get("Content-Type")),
-		ACL:         aws.String("public-read"),
-	})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid form"})
 		return
 	}
 
-	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, key)
-	c.JSON(http.StatusOK, gin.H{"url": url})
+	files := form.File["images"] // "images" is the field name
+	var urls []string
+
+	for _, file := range files {
+		src, err := file.Open()
+		if err != nil {
+			continue
+		}
+		defer src.Close()
+
+		key := file.Filename
+
+		_, err = s3Client.PutObject(&s3.PutObjectInput{
+			Bucket:      aws.String(bucketName),
+			Key:         aws.String(key),
+			Body:        src,
+			ContentType: aws.String(file.Header.Get("Content-Type")),
+			ACL:         aws.String("public-read"),
+		})
+		if err == nil {
+			url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, key)
+			urls = append(urls, url)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"uploaded": urls})
 }

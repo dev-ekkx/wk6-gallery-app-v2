@@ -11,7 +11,7 @@ func main() {
 	services.InitAWS()
 
 	r := gin.Default()
-	r.POST("/upload", services.UploadImage)
+	r.POST("/upload", services.UploadImages)
 
 	port := os.Getenv("PORT")
 	if port == "" {
