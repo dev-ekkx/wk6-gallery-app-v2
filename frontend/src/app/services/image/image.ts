@@ -12,6 +12,6 @@ public uploadImages(files: File[]) {
   for (const file of files) {
     form.append('images', file); // key name must match backend
   }
-  return this.http.post<{ uploaded: string[] }>('/api/upload', form);
+  return this.http.post<{ message: string }>('/api/upload', form);
 }
 }

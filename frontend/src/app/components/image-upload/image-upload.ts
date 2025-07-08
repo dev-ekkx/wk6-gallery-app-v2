@@ -77,8 +77,8 @@ protected imageService = inject(ImageService);
     console.log(imagesArray);
 this.imageService.uploadImages(imagesArray).pipe(take(1)).subscribe({
   next: (result) => {
-    console.log('Upload successful:', result);
     this.images.set([]);
+    alert(result.message)
   },
   error: (error) => {
     console.error('Upload failed:', error);

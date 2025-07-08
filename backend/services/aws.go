@@ -50,7 +50,7 @@ func UploadImages(c *gin.Context) {
 		}
 		defer f.Close()
 
-		key := "uploads/" + file.Filename
+		key := file.Filename
 
 		_, err = s3Client.PutObject(&s3.PutObjectInput{
 			Bucket:      aws.String(bucketName),
