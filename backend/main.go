@@ -1,38 +1,25 @@
 package main
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/joho/godotenv"
+	"github.com/dev-ekkx/wk5-gallery-app/services"
+	"github.com/gin-gonic/gin"
 	"log"
 	"os"
 )
 
-var (
-	s3Client   *s3.S3
-	bucketName string
-)
+func main() {
+	services.InitAWS()
 
-func initAWS() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	r := gin.Default()
+	r.POST("/upload", services.UploadImage)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
 	}
-
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(os.Getenv("AWS_REGION")),
-		Credentials: credentials.NewStaticCredentials(
-			os.Getenv("AWS_ACCESS_KEY_ID"),
-			os.Getenv("AWS_SECRET_ACCESS_KEY"),
-			"",
-		),
-	})
+	err := r.Run(":" + port)
 	if err != nil {
-		log.Fatal("Failed to create AWS session:", err)
+		log.Fatal("Error loading env: ", err)
+		return
 	}
-
-	s3Client = s3.New(sess)
-	bucketName = os.Getenv("AWS_BUCKET")
 }
