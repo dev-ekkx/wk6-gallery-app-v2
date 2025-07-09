@@ -1,7 +1,7 @@
 <div class="gallery-container">
   <div class="image-grid">
     @for (img of images(); track $index) {
-      <div  class="image-wrapper">
+      <div  class="image-wrapper image-container">
         <img [src]="img.url" class="preview-image image-item" alt="Image Preview">
         <button class="remove-btn" (click)="deleteImage(img.key)" title="Remove Image">×</button>
       </div>

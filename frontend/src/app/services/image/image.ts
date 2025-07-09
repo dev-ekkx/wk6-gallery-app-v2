@@ -1,12 +1,13 @@
-import {inject, Injectable} from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {ImageResponse} from '../../interfaces/interfaces';
+import {Image, ImageResponse} from '../../interfaces/interfaces';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ImageService {
   protected http = inject(HttpClient);
+  public   images = signal<Image[]>([]);
 
 public uploadImages(files: File[]) {
   const form = new FormData();

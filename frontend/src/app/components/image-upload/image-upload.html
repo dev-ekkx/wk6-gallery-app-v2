@@ -18,7 +18,11 @@
     }
   </div>
   @if (images().length) {
-
-    <button [disabled]="isUploading()" class="upload-btn" style="background: gold; margin-top: 2rem" (click)="uploadToS3()">Upload to S3</button>
+    <button [disabled]="isUploading()" class="upload-btn" style="background: gold; margin-top: 2rem; display: flex; align-items: center; gap: 0.4rem; margin-inline: auto" (click)="uploadToS3()">
+      <span>Upload to S3</span>
+      @if (isUploading()) {
+<div class="spinner"></div>
+      }
+    </button>
   }
 </div>
