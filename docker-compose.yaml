@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     env_file:
-      - ./backend/.env  # ensure this file exists
+      - ./backend/.env
     expose:
       - "8080"
     networks:
@@ -17,9 +17,9 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     ports:
-      - "80:80"  # Expose Angular/Nginx frontend to host
+      - "80:80"
     depends_on:
-      - backend  # Ensure backend starts before frontend
+      - backend
     networks:
       - app-network
 
