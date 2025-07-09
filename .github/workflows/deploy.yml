@@ -34,7 +34,7 @@ jobs:
 
     - name: Tag Docker image
       run: |
-        docker tag $IMAGE_NAME:latest ${{ secrets.ECR_REGISTRY }}/$IMAGE_NAME:latest
+        docker tag $IMAGE_NAME:latest $ECR_REGISTRY/$IMAGE_NAME:latest
 
     - name: Push to ECR
       run: |
