@@ -1,0 +1,18 @@
+<div class="gallery-container">
+  <div class="image-grid">
+    @for (img of images(); track $index) {
+      <div  class="image-wrapper">
+        <img [src]="img.url" class="preview-image image-item" alt="Image Preview">
+        <button class="remove-btn" (click)="deleteImage(img.key)" title="Remove Image">×</button>
+      </div>
+    }
+  </div>
+
+  @if (hasMore()) {
+  <div class="load-more-container">
+    <button (click)="loadMore()" [disabled]="loading()" class="load-more-btn">
+      {{ loading() ? 'Loading...' : 'Load More' }}
+    </button>
+  </div>
+  }
+</div>

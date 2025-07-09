@@ -1,0 +1,24 @@
+# Node modules (will be re-installed in Docker)
+node_modules/
+
+# Build outputs
+dist/
+.angular/
+
+# IDE/editor config
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env & secrets
+.env
+
+# Logs
+*.log
+npm-debug.log
+yarn-error.log

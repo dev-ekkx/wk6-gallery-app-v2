@@ -1,0 +1,23 @@
+# Go build artifacts
+main
+*.exe
+*.out
+
+# Vendor directory (if using)
+vendor/
+
+# IDE/editor config
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env & secrets
+.env
+
+# Logs
+*.log

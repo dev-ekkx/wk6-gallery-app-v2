@@ -1,0 +1,29 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    env_file:
+      - ./backend/.env  # ensure this file exists
+    expose:
+      - "8080"
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "80:80"  # Expose Angular/Nginx frontend to host
+    depends_on:
+      - backend  # Ensure backend starts before frontend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+

@@ -1,0 +1,24 @@
+<div class="upload-container">
+  <h1>Upload Your Images</h1>
+  <div class="drop-zone"
+       (dragover)="onDragOver($event)"
+       (dragleave)="onDragLeave($event)"
+       (drop)="onDrop($event)">
+    <p>Drag & drop your images here or</p>
+    <label for="file-input" class="upload-btn">Browse Images</label>
+    <input type="file" id="file-input" class="file-input" accept="image/*" multiple
+           (change)="onFileSelected($event)">
+  </div>
+  <div class="preview-container">
+    @for (image of images(); track $index) {
+      <div  class="image-wrapper">
+      <img [src]="image.url" class="preview-image" alt="Image Preview">
+      <button class="remove-btn" (click)="removeImage($index)" title="Remove Image">×</button>
+      </div>
+    }
+  </div>
+  @if (images().length) {
+
+    <button [disabled]="isUploading()" class="upload-btn" style="background: gold; margin-top: 2rem" (click)="uploadToS3()">Upload to S3</button>
+  }
+</div>
