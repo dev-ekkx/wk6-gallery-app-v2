@@ -1,15 +1,16 @@
 package services
 
 import (
+	"log"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
-	"log"
-	"net/http"
-	"os"
-	"time"
 )
 
 var (
