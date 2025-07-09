@@ -20,7 +20,10 @@ func main() {
 	}))
 
 	api := r.Group("/api")
-	api.POST("/upload", services.UploadImages)
+	{
+		api.POST("/upload", services.UploadImages)
+		api.GET("/images", services.GetImages)
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {

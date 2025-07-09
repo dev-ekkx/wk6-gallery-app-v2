@@ -1,24 +1,15 @@
-<div class="table-container" style="margin-top: 3rem">
-  <table>
-    <thead>
-    <tr>
-      <th>Preview</th>
-      <th>Name</th>
-      <th>Size</th>
-      <th>Action</th>
-    </tr>
-    </thead>
-    <tbody style="position: relative">
-      @for (image of images; track $index) {
-    <tr>
-      <td><img [src]="image.url" class="preview-image" alt="Image Preview"></td>
-      <td>{{ image.file.name }}</td>
-      <td>{{ formatFileSize(image.file.size) }}</td>
-      <td><button class="delete-btn" (click)="deleteImage($index)" title="Delete Image">Delete</button></td>
-    </tr>
-      } @empty {
-        <p style="padding-block: 1rem; position: absolute; width: 100%; text-align: center">No images uploaded yet.</p>
-      }
-    </tbody>
-  </table>
+<div class="gallery-container">
+  <div class="image-grid">
+    @for (img of images(); track $index) {
+    <img [src]="img.url" class="image-item" />
+    }
+  </div>
+
+  @if (hasMore()) {
+  <div class="load-more-container">
+    <button (click)="loadMore()" [disabled]="loading()" class="load-more-btn">
+      {{ loading() ? 'Loading...' : 'Load More' }}
+    </button>
+  </div>
+  }
 </div>

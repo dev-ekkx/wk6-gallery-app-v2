@@ -1,5 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
+import {ImageResponse} from '../../interfaces/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -14,4 +15,12 @@ public uploadImages(files: File[]) {
   }
   return this.http.post<{ message: string }>('/api/upload', form);
 }
+
+ public getImages(startAfter?: string) {
+    let url = '/api/images';
+    if (startAfter) {
+      url += `?startAfter=${encodeURIComponent(startAfter)}`;
+    }
+    return this.http.get<ImageResponse>(url);
+  }
 }

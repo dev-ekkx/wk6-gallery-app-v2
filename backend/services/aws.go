@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 var (
@@ -67,4 +68,54 @@ func UploadImages(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Uploaded successfully"})
+}
+
+func GetImages(c *gin.Context) {
+	continuationToken := c.Query("continuationToken")
+
+	input := &s3.ListObjectsV2Input{
+		Bucket:  aws.String(bucketName),
+		MaxKeys: aws.Int64(10),
+	}
+	if continuationToken != "" {
+		input.ContinuationToken = aws.String(continuationToken)
+	}
+
+	output, err := s3Client.ListObjectsV2(input)
+	if err != nil {
+		log.Println("List error:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list images"})
+		return
+	}
+
+	var images []ImageStruct
+	for _, item := range output.Contents {
+		if *item.Key == "" || (*item.Key)[len(*item.Key)-1] == '/' {
+			continue
+		}
+
+		// Generate signed URL
+		req, _ := s3Client.GetObjectRequest(&s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    item.Key,
+		})
+		urlStr, err := req.Presign(15 * time.Minute)
+		if err != nil {
+			log.Println("Failed to sign URL:", err)
+			continue
+		}
+
+		images = append(images, ImageStruct{
+			Key:  *item.Key,
+			Size: *item.Size,
+			ETag: aws.StringValue(item.ETag),
+			URL:  urlStr,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"images":      images,
+		"nextToken":   aws.StringValue(output.NextContinuationToken),
+		"isTruncated": aws.BoolValue(output.IsTruncated),
+	})
 }
