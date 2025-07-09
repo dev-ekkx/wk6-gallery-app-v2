@@ -78,7 +78,14 @@ protected imageService = inject(ImageService);
 this.imageService.uploadImages(imagesArray).pipe(take(1)).subscribe({
   next: (result) => {
     this.images.set([]);
-    this.imageService.getImages()
+    this.imageService.getImages().pipe(take(1)).subscribe({
+      next: (res) => {
+        this.imageService.images.set(res.images);
+      },
+      error: (err) => {
+        alert('Failed to refresh images:' + err.message);
+      }
+    })
     alert(result.message)
   },
   error: (error) => {

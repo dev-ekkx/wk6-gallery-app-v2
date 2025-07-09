@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, OnInit, signal} from '@angular/core';
+import {Component, effect, inject, OnDestroy, OnInit, signal} from '@angular/core';
 import {ImageService} from '../../services/image/image';
 import {Subject, take, takeUntil} from 'rxjs';
 import {Image} from '../../interfaces/interfaces';
@@ -11,11 +11,17 @@ import {Image} from '../../interfaces/interfaces';
 })
 export class ImageList implements OnInit, OnDestroy {
   protected imageService = inject(ImageService);
-
-  images = signal<Image[]>([]);
+  images = signal<Image[]>(this.imageService.images());
   nextToken  = signal<string | null>(null);
   hasMore = signal(false);
   loading = signal(false);
+
+  constructor() {
+    effect(() => {
+      if (this.imageService.images()) {
+        this.images.set(this.imageService.images());
+      }
+    });  }
 
   protected destroy$ = new Subject<void>();
 
@@ -60,7 +66,7 @@ export class ImageList implements OnInit, OnDestroy {
     this.imageService.deleteImage(key).pipe(take(2)).subscribe({
       next: () => {
         const newImages = this.images().filter(img => img.key !== key);
-        this.images.set(newImages);
+        this.imageService.images.set(newImages);
       },
       error: err => {
         console.error('Failed to delete image', err);
