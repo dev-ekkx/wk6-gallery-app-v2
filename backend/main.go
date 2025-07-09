@@ -23,6 +23,7 @@ func main() {
 	{
 		api.POST("/upload", services.UploadImages)
 		api.GET("/images", services.GetImages)
+		api.DELETE("/images/:key", services.DeleteImage)
 	}
 
 	port := os.Getenv("PORT")

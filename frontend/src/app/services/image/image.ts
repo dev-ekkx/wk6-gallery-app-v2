@@ -11,7 +11,7 @@ export class ImageService {
 public uploadImages(files: File[]) {
   const form = new FormData();
   for (const file of files) {
-    form.append('images', file); // key name must match backend
+    form.append('images', file);
   }
   return this.http.post<{ message: string }>('/api/upload', form);
 }
@@ -22,5 +22,9 @@ public uploadImages(files: File[]) {
       url += `?startAfter=${encodeURIComponent(startAfter)}`;
     }
     return this.http.get<ImageResponse>(url);
+  }
+
+  public deleteImage(key: string) {
+    return this.http.delete<{ message: string }>(`/api/images/${encodeURIComponent(key)}`);
   }
 }

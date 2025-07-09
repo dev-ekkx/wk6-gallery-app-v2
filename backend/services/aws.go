@@ -119,3 +119,34 @@ func GetImages(c *gin.Context) {
 		"isTruncated": aws.BoolValue(output.IsTruncated),
 	})
 }
+
+func DeleteImage(c *gin.Context) {
+	key := c.Param("key")
+	if key == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing image key"})
+		return
+	}
+
+	_, err := s3Client.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		log.Println("Failed to delete object:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete image"})
+		return
+	}
+
+	// Wait until the deletion is confirmed
+	err = s3Client.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		log.Println("WaitUntilObjectNotExists failed:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Image deletion not confirmed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Image deleted"})
+}

@@ -78,6 +78,7 @@ protected imageService = inject(ImageService);
 this.imageService.uploadImages(imagesArray).pipe(take(1)).subscribe({
   next: (result) => {
     this.images.set([]);
+    this.imageService.getImages()
     alert(result.message)
   },
   error: (error) => {

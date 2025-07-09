@@ -1,6 +1,6 @@
 import {Component, inject, OnDestroy, OnInit, signal} from '@angular/core';
 import {ImageService} from '../../services/image/image';
-import {Subject, takeUntil} from 'rxjs';
+import {Subject, take, takeUntil} from 'rxjs';
 import {Image} from '../../interfaces/interfaces';
 
 @Component({
@@ -54,9 +54,20 @@ export class ImageList implements OnInit, OnDestroy {
     return `${(size / 1048576).toFixed(2)} MB`;
   }
 
-  protected deleteImage(index: number): void {
-    console.log(index)
+  protected deleteImage(key: string) {
+    if (!confirm('Are you sure you want to delete this image?')) return;
+
+    this.imageService.deleteImage(key).pipe(take(2)).subscribe({
+      next: () => {
+        const newImages = this.images().filter(img => img.key !== key);
+        this.images.set(newImages);
+      },
+      error: err => {
+        console.error('Failed to delete image', err);
+      }
+    });
   }
+
 
   ngOnDestroy() {
     this.destroy$.next()
