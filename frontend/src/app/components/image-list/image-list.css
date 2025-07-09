@@ -7,7 +7,7 @@
 .image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 2rem;
+  gap: 0.5rem;
 
   @media  screen and (min-width: 600px) {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
