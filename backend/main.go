@@ -1,14 +1,20 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os"
+
 	"github.com/dev-ekkx/wk5-gallery-app/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"log"
-	"os"
 )
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
+	port := os.Getenv("PORT")
+	fmt.Println("Port" + port)
+
 	services.InitAWS()
 
 	r := gin.Default()
@@ -26,7 +32,6 @@ func main() {
 		api.DELETE("/images/:key", services.DeleteImage)
 	}
 
-	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}

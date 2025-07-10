@@ -1,36 +1,33 @@
-# Build Angular frontend
-FROM node:20-alpine as frontend-builder
-WORKDIR /frontend
-COPY frontend/package*.json ./
-RUN npm install
+# Step 1: Build Angular frontend
+FROM node:20-alpine AS frontend
+WORKDIR /app/frontend
 COPY frontend/ .
-RUN npm run build -- --configuration production
+RUN npm install && npm run build --prod
 
-# Build Go backend
-FROM golang:1.24-alpine as backend-builder
-WORKDIR /backend
-COPY backend/go.mod backend/go.sum ./
-RUN go mod download
+# Step 2: Build Go backend
+FROM golang:1.24-alpine AS backend
+WORKDIR /app/backend
 COPY backend/ .
-RUN go build -o server .
+RUN go build -o app .
 
-# Final stage: merge both builds
+# Step 3: Final Image with Nginx + Go + Frontend
 FROM nginx:alpine
 
-# Copy Angular app to Nginx
+# Copy built Angular files to Nginx's web root
+COPY --from=frontend /app/frontend/dist/frontend/browser /usr/share/nginx/html/
+
+# Replace Nginx default config with custom config
 COPY frontend/nginx.conf /etc/nginx/nginx.conf
-COPY --from=frontend-builder /frontend/dist/ /usr/share/nginx/html/
 
-# Copy backend binary
-COPY --from=backend-builder /backend/server /app/server
+# Copy the compiled Go binary
+COPY --from=backend /app/backend/app /app/app
 
-# Install tini to handle PID 1 correctly
-RUN apk add --no-cache tini
+# Copy startup script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
-# Custom entrypoint: run backend & nginx together
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
+# Expose HTTP port
 EXPOSE 80
-ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["/entrypoint.sh"]
+
+# Start Go backend and Nginx
+CMD ["/start.sh"]
