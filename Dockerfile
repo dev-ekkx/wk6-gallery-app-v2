@@ -27,7 +27,7 @@ COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 # Expose HTTP port
-EXPOSE 80
+EXPOSE 8081
 
 # Start Go backend and Nginx
 CMD ["/start.sh"]
