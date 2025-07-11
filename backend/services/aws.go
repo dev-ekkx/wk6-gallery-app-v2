@@ -88,8 +88,8 @@ func GetImages(c *gin.Context) {
 
 	output, err := s3Client.ListObjectsV2(input)
 	if err != nil {
-		log.Println("List error:", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list images"})
+		log.Println("List error:", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to list images, %v", err.Error())})
 		return
 	}
 
