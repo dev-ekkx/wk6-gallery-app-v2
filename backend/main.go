@@ -11,9 +11,16 @@ import (
 )
 
 func main() {
+
+	// envErr := godotenv.Load()
+	// if envErr != nil {
+	// 	log.Fatal("Error loading .env file")
+	// }
+
 	gin.SetMode(gin.ReleaseMode)
 	port := os.Getenv("PORT")
-	fmt.Println("Port" + port)
+	fmt.Println("Port: " + port)
+	fmt.Println(os.Getenv("AWS_REGION"))
 
 	services.InitAWS()
 

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -83,6 +84,7 @@ func GetImages(c *gin.Context) {
 	}
 
 	output, err := s3Client.ListObjectsV2(input)
+	fmt.Print("bucketName: " + bucketName)
 	if err != nil {
 		log.Println("List error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list images"})
