@@ -69,7 +69,7 @@ jobs:
 
     - name: Build image using Docker Compose
       run: |
-        docker-compose build
+        docker compose build
 
     - name: Tag image for ECR
       run: |
