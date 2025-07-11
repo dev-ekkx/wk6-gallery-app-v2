@@ -33,7 +33,10 @@ func InitAWS() {
 	}
 
 	s3Client = s3.New(sess)
+	fmt.Println("Access Key: " + os.Getenv("AWS_ACCESS_KEY_ID"))
+	fmt.Println("AWS Region: " + os.Getenv("AWS_REGION"))
 	bucketName = os.Getenv("S3_BUCKET_NAME")
+	fmt.Println("Bucket Name: " + bucketName)
 }
 
 func UploadImages(c *gin.Context) {
@@ -84,7 +87,6 @@ func GetImages(c *gin.Context) {
 	}
 
 	output, err := s3Client.ListObjectsV2(input)
-	fmt.Print("bucketName: " + bucketName)
 	if err != nil {
 		log.Println("List error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to list images"})
