@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
@@ -20,21 +19,21 @@ var (
 )
 
 func InitAWS() {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(os.Getenv("AWS_REGION")),
-		Credentials: credentials.NewStaticCredentials(
-			os.Getenv("AWS_ACCESS_KEY_ID"),
-			os.Getenv("AWS_SECRET_ACCESS_KEY"),
-			"",
-		),
-	})
+	// sess, err := session.NewSession(&aws.Config{
+	// 	Region: aws.String(os.Getenv("AWS_REGION")),
+	// 	Credentials: credentials.NewStaticCredentials(
+	// 		os.Getenv("AWS_ACCESS_KEY_ID"),
+	// 		os.Getenv("AWS_SECRET_ACCESS_KEY"),
+	// 		"",
+	// 	),
+	// })
+
+	sess, err := session.NewSession()
 	if err != nil {
 		log.Fatal("Failed to create AWS session:", err)
 	}
 
 	s3Client = s3.New(sess)
-	fmt.Println("Access Key: " + os.Getenv("AWS_ACCESS_KEY_ID"))
-	fmt.Println("AWS Region: " + os.Getenv("AWS_REGION"))
 	bucketName = os.Getenv("S3_BUCKET_NAME")
 	fmt.Println("Bucket Name: " + bucketName)
 }
