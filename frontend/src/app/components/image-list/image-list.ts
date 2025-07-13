@@ -37,8 +37,10 @@ export class ImageList implements OnInit, OnDestroy {
           this.images.set(res.images);
           this.nextToken.set(res.nextToken ?? null);
           this.hasMore.set(!!res.isTruncated);
+          this.loading.set(false);
         },
         error: () => {
+          this.loading.set(false);
           alert('Failed to load images');
         },
         complete: () => {

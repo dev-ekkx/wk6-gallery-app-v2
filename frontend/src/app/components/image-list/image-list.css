@@ -50,3 +50,14 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.no-images {
+  width: 100%;
+  text-align: center;
+  color: #888;  
+  font-size: 16px;
+  background: white;
+  padding: 20px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}

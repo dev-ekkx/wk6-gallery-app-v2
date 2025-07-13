@@ -1,13 +1,21 @@
 <div class="gallery-container">
-  <div class="image-grid">
-    @for (img of images(); track $index) {
-      <div  class="image-wrapper image-container">
-        <img [src]="img.url" class="preview-image image-item" alt="Image Preview">
-        <button class="remove-btn" (click)="deleteImage(img.key)" title="Remove Image">×</button>
-      </div>
+  <div style="text-align: center; margin-bottom: 0.5rem;">Images list</div>
+  @if (loading()) {
+    <div style="text-align: center; color: blue;">loading...</div>
+  }
+  @else {
+   <div [class]="images().length ? 'image-grid' : ''">
+      @for (img of images(); track $index) {
+        <div  class="image-wrapper image-container">
+          <img [src]="img.url" class="preview-image image-item" alt="Image Preview">
+          <button class="remove-btn" (click)="deleteImage(img.key)" title="Remove Image">×</button>
+        </div>
+      } @empty {
+        <div class="no-images">No images available</div>
     }
   </div>
-
+}
+  
   @if (hasMore()) {
   <div class="load-more-container">
     <button (click)="loadMore()" [disabled]="loading()" class="load-more-btn">
