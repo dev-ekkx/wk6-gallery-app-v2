@@ -34,7 +34,7 @@ export class ImageList implements OnInit, OnDestroy {
     this.imageService.getImages(this.nextToken() ?? undefined).pipe(takeUntil(this.destroy$)).subscribe(
       {
         next: res => {
-          this.images.set(res.images);
+          this.images.set(res.images ?? []);
           this.nextToken.set(res.nextToken ?? null);
           this.hasMore.set(!!res.isTruncated);
           this.loading.set(false);

@@ -80,7 +80,7 @@ this.imageService.uploadImages(imagesArray).pipe(take(1)).subscribe({
     this.images.set([]);
     this.imageService.getImages().pipe(take(1)).subscribe({
       next: (res) => {
-        this.imageService.images.set(res.images);
+        this.imageService.images.set(res.images ?? []);
       },
       error: (err) => {
         alert('Failed to refresh images:' + err.message);
