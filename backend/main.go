@@ -28,8 +28,8 @@ func main() {
 	api := r.Group("/api")
 	{
 		api.POST("/upload", services.UploadImages)
-		api.GET("/images", services.GetImages)
-		api.DELETE("/images/:key", services.DeleteImage)
+		// api.GET("/images", services.GetImages)
+		// api.DELETE("/images/:key", services.DeleteImage)
 	}
 
 	if port == "" {
