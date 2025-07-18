@@ -29,7 +29,7 @@ func main() {
 	{
 		api.POST("/upload", services.UploadImages)
 		api.GET("/images", services.GetImages)
-		// api.DELETE("/images/:key", services.DeleteImage)
+		api.DELETE("/images/:key", services.DeleteImage)
 	}
 
 	if port == "" {

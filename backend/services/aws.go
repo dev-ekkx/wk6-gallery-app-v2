@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,7 +11,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/smithy-go"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,56 +32,6 @@ func InitAWS() {
 	bucketName = os.Getenv("S3_BUCKET_NAME")
 	fmt.Println("Bucket Name: " + bucketName)
 }
-
-// func GetImages(c *gin.Context) {
-// 	continuationToken := c.Query("continuationToken")
-
-// input := &s3.ListObjectsV2Input{
-// 		Bucket:  aws.String(bucketName),
-// 		MaxKeys: aws.Int64(10),
-// 	}
-// 	if continuationToken != "" {
-// 		input.ContinuationToken = aws.String(continuationToken)
-// 	}
-
-// 	output, err := s3Client.ListObjectsV2(input)
-// 	if err != nil {
-// 		log.Println("List error:", err.Error())
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to list images, %v", err.Error())})
-// 		return
-// 	}
-
-// 	var images []ImageStruct
-// 	for _, item := range output.Contents {
-// 		if *item.Key == "" || (*item.Key)[len(*item.Key)-1] == '/' {
-// 			continue
-// 		}
-
-// 		// Generate signed URL
-// 		req, _ := s3Client.GetObjectRequest(&s3.GetObjectInput{
-// 			Bucket: aws.String(bucketName),
-// 			Key:    item.Key,
-// 		})
-// 		urlStr, err := req.Presign(15 * time.Minute)
-// 		if err != nil {
-// 			log.Println("Failed to sign URL:", err)
-// 			continue
-// 		}
-
-// 		images = append(images, ImageStruct{
-// 			Key:  *item.Key,
-// 			Size: *item.Size,
-// 			ETag: aws.StringValue(item.ETag),
-// 			URL:  urlStr,
-// 		})
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"images":      images,
-// 		"nextToken":   aws.StringValue(output.NextContinuationToken),
-// 		"isTruncated": aws.BoolValue(output.IsTruncated),
-// 	})
-// }
 
 // func DeleteImage(c *gin.Context) {
 // 	key := c.Param("key")
@@ -204,4 +157,59 @@ func GetImages(c *gin.Context) {
 		"nextToken":   aws.StringValue(output.NextContinuationToken),
 		"isTruncated": aws.BoolValue(output.IsTruncated),
 	})
+}
+
+func DeleteImage(c *gin.Context) {
+	key := c.Param("key")
+	if key == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing image key"})
+		return
+	}
+
+	input := &s3.DeleteObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(key),
+	}
+
+	_, err := s3Client.DeleteObject(c, input)
+	if err != nil {
+		var noKey *types.NoSuchKey
+		var apiErr *smithy.GenericAPIError
+		if errors.As(err, &noKey) {
+			c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("Image with key %s not found in %s", key, bucketName)})
+			return
+		} else if errors.As(err, &apiErr) {
+			switch apiErr.ErrorCode() {
+			case "AccessDenied":
+				c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to delete the image"})
+				return
+			case "InvalidBucketName":
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid bucket name"})
+				return
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to delete image: %s", apiErr.ErrorMessage())})
+				return
+			}
+		} else {
+			err = s3.NewObjectNotExistsWaiter(s3Client).Wait(
+				context.TODO(),
+				&s3.HeadObjectInput{
+					Bucket: aws.String(bucketName),
+					Key:    aws.String(key),
+				},
+				time.Minute,
+			)
+			if err != nil {
+				log.Println("WaitUntilObjectNotExists failed:", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Image deletion not confirmed"})
+				return
+			} else {
+				c.JSON(http.StatusOK, gin.H{"message": "Image deleted successfully"})
+				return
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Image deleted successfully"})
+
 }
