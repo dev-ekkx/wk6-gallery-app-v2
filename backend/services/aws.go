@@ -6,10 +6,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gin-gonic/gin"
 )
@@ -30,47 +30,10 @@ func InitAWS() {
 	fmt.Println("Bucket Name: " + bucketName)
 }
 
-// func UploadImages(c *gin.Context) {
-// 	form, err := c.MultipartForm()
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid multipart form"})
-// 		return
-// 	}
-
-// 	files := form.File["images"]
-
-// 	for _, file := range files {
-// 		f, err := file.Open()
-// 		if err != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
-// 			return
-// 		}
-// 		defer f.Close()
-
-// 		key := file.Filename
-
-// 		_, err = s3Client.PutObject(&s3.PutObjectInput{
-// 			Bucket:      aws.String(bucketName),
-// 			Key:         aws.String(key),
-// 			Body:        f,
-// 			ContentType: aws.String(file.Header.Get("Content-Type")),
-// 		})
-
-// 		if err != nil {
-// 			log.Println("S3 upload error:", err)
-// 			c.JSON(http.StatusInternalServerError, gin.H{"S3 upload error: ": err})
-// 			return
-// 		}
-// 	}
-
-// 	fmt.Println("Successfully uploaded files to S3:", output)
-// 	c.JSON(http.StatusOK, gin.H{"message": "Uploaded successfully"})
-// }
-
 // func GetImages(c *gin.Context) {
 // 	continuationToken := c.Query("continuationToken")
 
-// 	input := &s3.ListObjectsV2Input{
+// input := &s3.ListObjectsV2Input{
 // 		Bucket:  aws.String(bucketName),
 // 		MaxKeys: aws.Int64(10),
 // 	}
@@ -168,7 +131,6 @@ func UploadImages(c *gin.Context) {
 	for _, file := range files {
 		f, err := file.Open()
 		if err != nil {
-			fmt.Println("Failed to open file:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
 			return
 		}
@@ -176,7 +138,7 @@ func UploadImages(c *gin.Context) {
 
 		key := file.Filename
 
-		output, err := s3Client.PutObject(c, &s3.PutObjectInput{
+		_, err = s3Client.PutObject(c, &s3.PutObjectInput{
 			Bucket:      aws.String(bucketName),
 			Key:         aws.String(key),
 			Body:        f,
@@ -184,11 +146,62 @@ func UploadImages(c *gin.Context) {
 		})
 
 		if err != nil {
-			fmt.Println("S3 upload error:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"S3 upload error": err.Error()})
 			return
 		}
 
-		fmt.Println("Successfully uploaded file to S3:", output)
+		c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Successfully uploaded %s to S3", key)})
 	}
+}
+
+func GetImages(c *gin.Context) {
+	continuationToken := c.Query("continuationToken")
+
+	input := &s3.ListObjectsV2Input{
+		Bucket:  aws.String(bucketName),
+		MaxKeys: aws.Int32(10),
+	}
+	if continuationToken != "" {
+		input.ContinuationToken = aws.String(continuationToken)
+	}
+
+	output, err := s3Client.ListObjectsV2(c, input)
+	if err != nil {
+		log.Println("List error:", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to list images, %v", err.Error())})
+		return
+	}
+
+	var images []ImageStruct
+	for _, item := range output.Contents {
+		if *item.Key == "" || (*item.Key)[len(*item.Key)-1] == '/' {
+			continue
+		}
+
+		// Generate signed URL
+		presignClient := s3.NewPresignClient(s3Client)
+		presignResult, err := presignClient.PresignGetObject(context.TODO(), &s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    item.Key,
+		}, s3.WithPresignExpires(15*time.Minute))
+		if err != nil {
+			log.Println("Failed to sign URL:", err)
+			continue
+		}
+		urlStr := presignResult.URL
+
+		images = append(images, ImageStruct{
+			Key:  *item.Key,
+			Size: *item.Size,
+			ETag: aws.StringValue(item.ETag),
+			URL:  urlStr,
+		})
+
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"images":      images,
+		"nextToken":   aws.StringValue(output.NextContinuationToken),
+		"isTruncated": aws.BoolValue(output.IsTruncated),
+	})
 }
