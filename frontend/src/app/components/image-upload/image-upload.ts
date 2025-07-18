@@ -1,4 +1,4 @@
-import {Component, computed, effect, inject, signal} from '@angular/core';
+import {Component, computed, inject, signal} from '@angular/core';
 import {ImageService} from '../../services/image/image';
 import {take} from 'rxjs';
 import { ImageUploadInterface } from '../../interfaces/interfaces';
@@ -81,9 +81,27 @@ protected imageService = inject(ImageService);
 
   upload() {
     this.isUploading.set(true);
-console.log("images: ", this.images());
-    // this.imagesSubmitted.emit(
-    //   this.images.map(({ file, description }) => ({ file, description }))
-    // );
+    this.imageService.uploadImages(this.images())
+      .pipe(take(1))
+      .subscribe({
+        next: (response) => {
+          console.log(response.message);
+          this.images.set([]);
+        }
+        , error: (error) => {
+          alert('Upload failed: ' + error.message);
+        }
+        , complete: () => {
+          this.isUploading.set(false);
+          this.imageService.getImages().pipe(take(1)).subscribe({
+            next: (response) => {
+              this.imageService.images.set(response.images);
+            },
+            error: (error) => {
+              alert('Failed to fetch images: ' + error.message);
+            }
+          });
+        }
+      })
   }
 }
