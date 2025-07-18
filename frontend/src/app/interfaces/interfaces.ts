@@ -9,3 +9,9 @@ export interface ImageResponse {
   nextToken?: string;
   isTruncated?: boolean;
 }
+
+export interface ImageUploadInterface {
+  file: File;
+  url: string;
+  description: string;
+}

@@ -1,6 +1,6 @@
 import {inject, Injectable, signal} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {Image, ImageResponse} from '../../interfaces/interfaces';
+import {Image, ImageResponse, ImageUploadInterface} from '../../interfaces/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -9,12 +9,13 @@ export class ImageService {
   protected http = inject(HttpClient);
   public   images = signal<Image[]>([]);
 
-public uploadImages(files: File[]) {
-  const form = new FormData();
-  for (const file of files) {
-    form.append('images', file);
-  }
-  return this.http.post<{ message: string }>('/api/upload', form);
+public uploadImages(images: ImageUploadInterface[]) {
+  const formData = new FormData();
+ images.forEach((img, i) => {
+    formData.append(`images[${i}].file`, img.file);
+    formData.append(`images[${i}].description`, img.description);
+  });
+  return this.http.post<{ message: string }>('/api/upload', formData);
 }
 
  public getImages(startAfter?: string) {
