@@ -43,7 +43,7 @@ class="p-6 border rounded-s-xl shadow-md max-w-4xl mx-auto mb-6"
 
 <button
 (click)="upload()"
-[disabled]="isUploading()"
+[disabled]="isUploading() || !checkDescriptionsValidity()"
 class="mt-6 bg-blue-600 cursor-pointer hover:bg-blue-700 flex items-center gap-4 text-white px-6 py-2 rounded-lg disabled:cursor-not-allowed disabled:bg-blue-400"
 >
 <span>

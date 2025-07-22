@@ -15,7 +15,7 @@ protected imageService = inject(ImageService);
   protected isDragOver = signal(false);
 
   checkDescriptionsValidity = computed(() => {
-    return this.images().every(img => img.description.trim() !== '');
+    return this.images().every(img => img.description.trim().length > 2);
   });
   
    onDragOver(event: DragEvent) {
@@ -85,10 +85,12 @@ protected imageService = inject(ImageService);
       .pipe(take(1))
       .subscribe({
         next: (response) => {
+          this.isUploading.set(false);
           console.log(response.message);
           this.images.set([]);
         }
         , error: (error) => {
+          this.isUploading.set(false);
           alert('Upload failed: ' + error.message);
         }
         , complete: () => {

@@ -70,6 +70,71 @@ func UploadImages(c *gin.Context) {
 	}
 }
 
+// func UploadImages(c *gin.Context) {
+// 	bucketName := os.Getenv("S3_BUCKET_NAME")
+
+// 	form, err := c.MultipartForm()
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid multipart form"})
+// 		return
+// 	}
+
+// 	files := form.File
+// 	results := []string{}
+
+// 	for key, headers := range files {
+// 		if !strings.HasSuffix(key, ".file") {
+// 			continue
+// 		}
+
+// 		for i, fileHeader := range headers {
+// 			file, err := fileHeader.Open()
+// 			if err != nil {
+// 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+// 				return
+// 			}
+// 			defer file.Close()
+
+// 			// Extract description
+// 			descKey := fmt.Sprintf("images[%d].description", i)
+// 			description := c.PostForm(descKey)
+
+// 			// Create unique S3 key
+// 			s3Key := fmt.Sprintf("uploads/%d_%s", time.Now().UnixNano(), fileHeader.Filename)
+
+// 			// Upload to S3
+// 			_, err = s3Client.PutObject(c, &s3.PutObjectInput{
+// 				Bucket:      aws.String(bucketName),
+// 				Key:         aws.String(s3Key),
+// 				Body:        file,
+// 				ContentType: aws.String(fileHeader.Header.Get("Content-Type")),
+// 			})
+// 			if err != nil {
+// 				c.JSON(http.StatusInternalServerError, gin.H{"error": "S3 upload failed", "details": err.Error()})
+// 				return
+// 			}
+
+// 			// Insert metadata into RDS
+// 			_, err = db.Exec(`
+// 				INSERT INTO images (filename, description, s3_key)
+// 				VALUES ($1, $2, $3)
+// 			`, fileHeader.Filename, description, s3Key)
+
+// 			if err != nil {
+// 				c.JSON(http.StatusInternalServerError, gin.H{"error": "DB insert failed", "details": err.Error()})
+// 				return
+// 			}
+
+// 			results = append(results, fmt.Sprintf("Saved %s", fileHeader.Filename))
+// 		}
+// 	}
+
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"message": "Upload & DB save complete",
+// 		"files":   results,
+// 	})
+// }
+
 func GetImages(c *gin.Context) {
 	continuationToken := c.Query("continuationToken")
 
