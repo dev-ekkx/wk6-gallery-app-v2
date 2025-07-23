@@ -6,3 +6,9 @@ type ImageStruct struct {
 	ETag string `json:"etag"`
 	URL  string `json:"url"`
 }
+
+type RdsImageStruct struct {
+	Filename    string `json:"filename"`
+	Description string `json:"description"`
+	S3Key       string `json:"s3_key"`
+}

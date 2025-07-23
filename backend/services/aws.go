@@ -7,20 +7,46 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/smithy-go"
-	"github.com/gin-gonic/gin"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var (
 	s3Client   *s3.Client
 	bucketName string
 )
+
+func rds() *gorm.DB {
+	// Load environment variables
+	username := os.Getenv("DB_USERNAME")
+	password := os.Getenv("DB_PASSWORD")
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", host, username, password, dbName, port)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	db.AutoMigrate(&RdsImageStruct{})
+
+	return db
+}
 
 func InitAWS() {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
@@ -33,43 +59,6 @@ func InitAWS() {
 	fmt.Println("Bucket Name: " + bucketName)
 }
 
-func UploadImages(c *gin.Context) {
-	bucketName := os.Getenv("S3_BUCKET_NAME")
-
-	form, err := c.MultipartForm()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid multipart form"})
-		return
-	}
-
-	files := form.File["images"]
-
-	for _, file := range files {
-		f, err := file.Open()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
-			return
-		}
-		defer f.Close()
-
-		key := file.Filename
-
-		_, err = s3Client.PutObject(c, &s3.PutObjectInput{
-			Bucket:      aws.String(bucketName),
-			Key:         aws.String(key),
-			Body:        f,
-			ContentType: aws.String(file.Header.Get("Content-Type")),
-		})
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"S3 upload error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Successfully uploaded %s to S3", key)})
-	}
-}
-
 // func UploadImages(c *gin.Context) {
 // 	bucketName := os.Getenv("S3_BUCKET_NAME")
 
@@ -79,61 +68,104 @@ func UploadImages(c *gin.Context) {
 // 		return
 // 	}
 
-// 	files := form.File
-// 	results := []string{}
+// 	files := form.File["images"]
 
-// 	for key, headers := range files {
-// 		if !strings.HasSuffix(key, ".file") {
-// 			continue
+// 	for _, file := range files {
+// 		f, err := file.Open()
+// 		if err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+// 			return
+// 		}
+// 		defer f.Close()
+
+// 		key := file.Filename
+
+// 		_, err = s3Client.PutObject(c, &s3.PutObjectInput{
+// 			Bucket:      aws.String(bucketName),
+// 			Key:         aws.String(key),
+// 			Body:        f,
+// 			ContentType: aws.String(file.Header.Get("Content-Type")),
+// 		})
+
+// 		if err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"S3 upload error": err.Error()})
+// 			return
 // 		}
 
-// 		for i, fileHeader := range headers {
-// 			file, err := fileHeader.Open()
-// 			if err != nil {
-// 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
-// 				return
-// 			}
-// 			defer file.Close()
-
-// 			// Extract description
-// 			descKey := fmt.Sprintf("images[%d].description", i)
-// 			description := c.PostForm(descKey)
-
-// 			// Create unique S3 key
-// 			s3Key := fmt.Sprintf("uploads/%d_%s", time.Now().UnixNano(), fileHeader.Filename)
-
-// 			// Upload to S3
-// 			_, err = s3Client.PutObject(c, &s3.PutObjectInput{
-// 				Bucket:      aws.String(bucketName),
-// 				Key:         aws.String(s3Key),
-// 				Body:        file,
-// 				ContentType: aws.String(fileHeader.Header.Get("Content-Type")),
-// 			})
-// 			if err != nil {
-// 				c.JSON(http.StatusInternalServerError, gin.H{"error": "S3 upload failed", "details": err.Error()})
-// 				return
-// 			}
-
-// 			// Insert metadata into RDS
-// 			_, err = db.Exec(`
-// 				INSERT INTO images (filename, description, s3_key)
-// 				VALUES ($1, $2, $3)
-// 			`, fileHeader.Filename, description, s3Key)
-
-// 			if err != nil {
-// 				c.JSON(http.StatusInternalServerError, gin.H{"error": "DB insert failed", "details": err.Error()})
-// 				return
-// 			}
-
-// 			results = append(results, fmt.Sprintf("Saved %s", fileHeader.Filename))
-// 		}
+// 		c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Successfully uploaded %s to S3", key)})
 // 	}
-
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"message": "Upload & DB save complete",
-// 		"files":   results,
-// 	})
 // }
+
+func UploadImages(c *gin.Context) {
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid multipart form"})
+		return
+	}
+
+	files := form.File
+	results := []string{}
+
+	for key, headers := range files {
+		if !strings.HasSuffix(key, ".file") {
+			continue
+		}
+
+		for i, fileHeader := range headers {
+			file, err := fileHeader.Open()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+				return
+			}
+			defer file.Close()
+
+			// Extract description
+			descKey := fmt.Sprintf("images[%d].description", i)
+			description := c.PostForm(descKey)
+
+			// Create unique S3 key
+			s3Key := fmt.Sprintf("uploads/%d_%s", time.Now().UnixNano(), fileHeader.Filename)
+
+			// Upload to S3
+			_, err = s3Client.PutObject(c, &s3.PutObjectInput{
+				Bucket:      aws.String(bucketName),
+				Key:         aws.String(s3Key),
+				Body:        file,
+				ContentType: aws.String(fileHeader.Header.Get("Content-Type")),
+			})
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "S3 upload failed", "details": err.Error()})
+				return
+			}
+
+			// // Insert metadata into RDS
+			// _, err = db.Exec(`
+			// 	INSERT INTO images (filename, description, s3_key)
+			// 	VALUES ($1, $2, $3)
+			// `, fileHeader.Filename, description, s3Key)
+
+			// if err != nil {
+			// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "DB insert failed", "details": err.Error()})
+			// 	return
+			// }
+
+			// Insert Metadata into RDS
+			db := rds()
+			db.Create(&RdsImageStruct{
+				Filename:    fileHeader.Filename,
+				Description: description,
+				S3Key:       s3Key,
+			})
+
+			results = append(results, fmt.Sprintf("Saved %s", fileHeader.Filename))
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Upload & DB save complete",
+		"files":   results,
+	})
+}
 
 func GetImages(c *gin.Context) {
 	continuationToken := c.Query("continuationToken")
