@@ -40,10 +40,10 @@ func rds() *gorm.DB {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		panic("failed to connect database")
+		panic("failed to connect database: " + err.Error())
 	}
 
-	db.AutoMigrate(&RdsImageStruct{})
+	db.AutoMigrate(&Image{})
 
 	return db
 }
@@ -57,44 +57,11 @@ func InitAWS() {
 	s3Client = s3.NewFromConfig(cfg)
 	bucketName = os.Getenv("S3_BUCKET_NAME")
 	fmt.Println("Bucket Name: " + bucketName)
+
+	// Init RDS
+	rds()
+
 }
-
-// func UploadImages(c *gin.Context) {
-// 	bucketName := os.Getenv("S3_BUCKET_NAME")
-
-// 	form, err := c.MultipartForm()
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid multipart form"})
-// 		return
-// 	}
-
-// 	files := form.File["images"]
-
-// 	for _, file := range files {
-// 		f, err := file.Open()
-// 		if err != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
-// 			return
-// 		}
-// 		defer f.Close()
-
-// 		key := file.Filename
-
-// 		_, err = s3Client.PutObject(c, &s3.PutObjectInput{
-// 			Bucket:      aws.String(bucketName),
-// 			Key:         aws.String(key),
-// 			Body:        f,
-// 			ContentType: aws.String(file.Header.Get("Content-Type")),
-// 		})
-
-// 		if err != nil {
-// 			c.JSON(http.StatusInternalServerError, gin.H{"S3 upload error": err.Error()})
-// 			return
-// 		}
-
-// 		c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Successfully uploaded %s to S3", key)})
-// 	}
-// }
 
 func UploadImages(c *gin.Context) {
 	form, err := c.MultipartForm()
@@ -104,7 +71,6 @@ func UploadImages(c *gin.Context) {
 	}
 
 	files := form.File
-	results := []string{}
 
 	for key, headers := range files {
 		if !strings.HasSuffix(key, ".file") {
@@ -122,9 +88,18 @@ func UploadImages(c *gin.Context) {
 			// Extract description
 			descKey := fmt.Sprintf("images[%d].description", i)
 			description := c.PostForm(descKey)
+			fmt.Println("Description: ", description)
 
 			// Create unique S3 key
-			s3Key := fmt.Sprintf("uploads/%d_%s", time.Now().UnixNano(), fileHeader.Filename)
+			s3Key := fileHeader.Filename
+
+			db := rds()
+			// Check if the image already exists in the database
+			var existingImage Image
+			if err := db.Where("filename= ?", fileHeader.Filename).First(&existingImage).Error; err == nil {
+				c.JSON(http.StatusConflict, gin.H{"error": fmt.Sprintf("Image with key %s already exists", s3Key)})
+				return
+			}
 
 			// Upload to S3
 			_, err = s3Client.PutObject(c, &s3.PutObjectInput{
@@ -138,37 +113,35 @@ func UploadImages(c *gin.Context) {
 				return
 			}
 
-			// // Insert metadata into RDS
-			// _, err = db.Exec(`
-			// 	INSERT INTO images (filename, description, s3_key)
-			// 	VALUES ($1, $2, $3)
-			// `, fileHeader.Filename, description, s3Key)
-
-			// if err != nil {
-			// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "DB insert failed", "details": err.Error()})
-			// 	return
-			// }
-
 			// Insert Metadata into RDS
-			db := rds()
-			db.Create(&RdsImageStruct{
+			image := Image{
 				Filename:    fileHeader.Filename,
 				Description: description,
 				S3Key:       s3Key,
-			})
+			}
+			if err := db.Create(&image).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image metadata to database"})
+				return
+			}
 
-			results = append(results, fmt.Sprintf("Saved %s", fileHeader.Filename))
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Upload & DB save complete",
-		"files":   results,
 	})
 }
 
 func GetImages(c *gin.Context) {
 	continuationToken := c.Query("continuationToken")
+
+	// Fetch images from RDS
+	db := rds()
+	var images []Image
+	if err := db.Find(&images).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch images from database"})
+		return
+	}
 
 	input := &s3.ListObjectsV2Input{
 		Bucket:  aws.String(bucketName),
@@ -184,38 +157,35 @@ func GetImages(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to list images, %v", err.Error())})
 		return
 	}
+	// fetch images from S3
+	var imageStructs []ImageStruct
+	for _, img := range images {
+		for _, item := range output.Contents {
+			// Generate signed URL
+			presignClient := s3.NewPresignClient(s3Client)
+			presignResult, err := presignClient.PresignGetObject(context.TODO(), &s3.GetObjectInput{
+				Bucket: aws.String(bucketName),
+				Key:    &img.S3Key,
+			}, s3.WithPresignExpires(15*time.Minute))
+			if err != nil {
+				log.Println("Failed to sign URL:", err)
+				continue
+			}
+			urlStr := presignResult.URL
 
-	var images []ImageStruct
-	for _, item := range output.Contents {
-		if *item.Key == "" || (*item.Key)[len(*item.Key)-1] == '/' {
-			continue
+			imageStructs = append(imageStructs, ImageStruct{
+				Key:         img.S3Key,
+				Size:        aws.Int64Value(item.Size),
+				ETag:        aws.StringValue(item.ETag),
+				URL:         urlStr,
+				Description: img.Description,
+			})
 		}
-
-		// Generate signed URL
-		presignClient := s3.NewPresignClient(s3Client)
-		presignResult, err := presignClient.PresignGetObject(context.TODO(), &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    item.Key,
-		}, s3.WithPresignExpires(15*time.Minute))
-		if err != nil {
-			log.Println("Failed to sign URL:", err)
-			continue
-		}
-		urlStr := presignResult.URL
-
-		images = append(images, ImageStruct{
-			Key:  *item.Key,
-			Size: *item.Size,
-			ETag: aws.StringValue(item.ETag),
-			URL:  urlStr,
-		})
-
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"images":      images,
-		"nextToken":   aws.StringValue(output.NextContinuationToken),
-		"isTruncated": aws.BoolValue(output.IsTruncated),
+		"images": imageStructs,
+		"count":  len(imageStructs),
 	})
 }
 
@@ -268,6 +238,14 @@ func DeleteImage(c *gin.Context) {
 				return
 			}
 		}
+	}
+
+	// Delete from RDS
+	db := rds()
+	if err := db.Where("s3_key = ?", key).Delete(&Image{}).Error; err != nil {
+		log.Println("Failed to delete from RDS:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete image metadata from database"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Image deleted successfully"})

@@ -3,6 +3,7 @@ export interface Image {
   size: number;
   etag: string;
   url: string;
+  description: string;
 }
 export interface ImageResponse {
   images: Image[];

@@ -7,7 +7,6 @@ import {Image} from '../../interfaces/interfaces';
   selector: 'app-image-list',
   imports: [],
   templateUrl: './image-list.html',
-  styleUrl: './image-list.css'
 })
 export class ImageList implements OnInit, OnDestroy {
   protected imageService = inject(ImageService);

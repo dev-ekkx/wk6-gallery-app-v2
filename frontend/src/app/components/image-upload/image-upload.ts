@@ -17,7 +17,13 @@ protected imageService = inject(ImageService);
   checkDescriptionsValidity = computed(() => {
     return this.images().every(img => img.description.trim().length > 2);
   });
-  
+
+
+  isSelectedImagesValid = (idx: number) => {
+    const img = this.images()[idx];
+    return img && img.description.trim().length > 2;
+  }
+
    onDragOver(event: DragEvent) {
      this.isDragOver.set(true);
      event.preventDefault();
@@ -30,7 +36,6 @@ protected imageService = inject(ImageService);
    }
 
    onDrop(event: DragEvent) {
-    console.log(event)
     this.isDragOver.set(false);
     event.preventDefault();
     if (event.dataTransfer?.files) {

@@ -9,17 +9,21 @@ export class ImageService {
   protected http = inject(HttpClient);
   public   images = signal<Image[]>([]);
 
+  host = 'http://localhost:8080';
+
 public uploadImages(images: ImageUploadInterface[]) {
-  const formData = new FormData();
- images.forEach((img, i) => {
-    formData.append(`images[${i}].file`, img.file);
-    formData.append(`images[${i}].description`, img.description);
-  });
-  return this.http.post<{ message: string }>('/api/upload', formData);
+  const formData = this.buildFormData(images);
+
+    this.logFormData(formData);
+
+  return this.http.post<{ message: string }>(
+    `${this.host}/api/upload`,
+    formData
+  );
 }
 
  public getImages(startAfter?: string) {
-    let url = '/api/images';
+    let url = `${this.host}/api/images`;
     if (startAfter) {
       url += `?startAfter=${encodeURIComponent(startAfter)}`;
     }
@@ -27,6 +31,24 @@ public uploadImages(images: ImageUploadInterface[]) {
   }
 
   public deleteImage(key: string) {
-    return this.http.delete<{ message: string }>(`/api/images/${encodeURIComponent(key)}`);
+    return this.http.delete<{ message: string }>(`${this.host}/api/images/${encodeURIComponent(key)}`);
+  }
+  
+  
+  private buildFormData(images: ImageUploadInterface[]): FormData {
+    const formData = new FormData();
+    images.forEach((img, index) => {
+      formData.append(`images[${index}].file`, img.file);
+      formData.append(`images[${index}].description`, img.description);
+    });
+    return formData;
+  }
+
+  private logFormData(formData: FormData): void {
+  for (const [key, value] of formData.entries()) {
+    console.log(`${key}:`, value);
   }
 }
+
+}
+
