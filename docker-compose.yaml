@@ -33,10 +33,6 @@
 #       DB_PORT: 5432
 #       AWS_REGION: eu-west-1
 #       S3_BUCKET_NAME: week6-images-upload
-<<<<<<< HEAD
-=======
-
->>>>>>> 9536322 (refactor: update docker env files)
 #       PORT: 8080
 #       GIN_MODE: release
 #     ports:
