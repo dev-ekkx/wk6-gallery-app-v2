@@ -7,17 +7,16 @@ import (
 	"github.com/dev-ekkx/wk5-gallery-app/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	// Load environment variables frm go dojo
-	er := godotenv.Load()
-	if er != nil {
-		log.Fatal("Error loading .env file")
-	}
+	// er := godotenv.Load()
+	// if er != nil {
+	// 	log.Fatal("Error loading .env file")
+	// }
 
 	port := os.Getenv("PORT")
 

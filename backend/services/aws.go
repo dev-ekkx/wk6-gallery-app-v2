@@ -191,6 +191,7 @@ func GetImages(c *gin.Context) {
 
 func DeleteImage(c *gin.Context) {
 	key := c.Param("key")
+	fmt.Println("Key to delete:", key)
 	if key == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing image key"})
 		return
@@ -230,11 +231,10 @@ func DeleteImage(c *gin.Context) {
 				time.Minute,
 			)
 			if err != nil {
-				log.Println("WaitUntilObjectNotExists failed:", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Image deletion not confirmed"})
 				return
 			} else {
-				c.JSON(http.StatusOK, gin.H{"message": "Image deleted successfully"})
+				c.JSON(http.StatusOK, gin.H{"message": "Image deletion confirmed"})
 				return
 			}
 		}
@@ -243,7 +243,6 @@ func DeleteImage(c *gin.Context) {
 	// Delete from RDS
 	db := rds()
 	if err := db.Where("s3_key = ?", key).Delete(&Image{}).Error; err != nil {
-		log.Println("Failed to delete from RDS:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete image metadata from database"})
 		return
 	}

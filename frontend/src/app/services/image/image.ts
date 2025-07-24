@@ -9,7 +9,8 @@ export class ImageService {
   protected http = inject(HttpClient);
   public   images = signal<Image[]>([]);
 
-  host = 'http://localhost:8080';
+  // host = 'http://localhost:8080/api';
+  host = "/api";
 
 public uploadImages(images: ImageUploadInterface[]) {
   const formData = this.buildFormData(images);
@@ -17,13 +18,13 @@ public uploadImages(images: ImageUploadInterface[]) {
     this.logFormData(formData);
 
   return this.http.post<{ message: string }>(
-    `${this.host}/api/upload`,
+    `${this.host}/upload`,
     formData
   );
 }
 
  public getImages(startAfter?: string) {
-    let url = `${this.host}/api/images`;
+    let url = `${this.host}/images`;
     if (startAfter) {
       url += `?startAfter=${encodeURIComponent(startAfter)}`;
     }

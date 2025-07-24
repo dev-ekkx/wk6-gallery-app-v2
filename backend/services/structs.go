@@ -1,7 +1,5 @@
 package services
 
-import "gorm.io/gorm"
-
 type ImageStruct struct {
 	Key         string `json:"key"`
 	Size        int64  `json:"size"`
@@ -11,7 +9,6 @@ type ImageStruct struct {
 }
 
 type Image struct {
-	gorm.Model
 	Filename    string `json:"filename"`
 	Description string `json:"description"`
 	S3Key       string `json:"s3_key"`
