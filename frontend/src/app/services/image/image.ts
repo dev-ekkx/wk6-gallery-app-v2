@@ -9,8 +9,8 @@ export class ImageService {
   protected http = inject(HttpClient);
   public   images = signal<Image[]>([]);
 
-  // host = 'http://localhost:8080/api';
-  host = "/api";
+  host = 'http://localhost:8080/api';
+  // host = "/api";
 
 public uploadImages(images: ImageUploadInterface[]) {
   const formData = this.buildFormData(images);
@@ -32,7 +32,7 @@ public uploadImages(images: ImageUploadInterface[]) {
   }
 
   public deleteImage(key: string) {
-    return this.http.delete<{ message: string }>(`${this.host}/api/images/${encodeURIComponent(key)}`);
+    return this.http.delete<{ message: string }>(`${this.host}/images/${encodeURIComponent(key)}`);
   }
   
   

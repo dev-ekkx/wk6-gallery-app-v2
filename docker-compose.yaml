@@ -1,31 +1,47 @@
 # services:
-#   backend:
-#     build:
-#       context: ./backend
-#       dockerfile: Dockerfile
-#     container_name: backend
-#     env_file:
-#       - ./backend/.env
-#     expose:
-#       - "8080"
-#     networks:
-#       - app-network
-
-#   frontend:
-#     build:
-#       context: ./frontend
-#       dockerfile: Dockerfile.frontend
-#     container_name: frontend
+#   db:
+#     image: postgres:latest
+#     container_name: gallery-db
+#     restart: always
+#     environment:
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: example
+#       POSTGRES_DB: postgres
 #     ports:
-#       - "80:80"
-#     depends_on:
-#       - backend
-#     networks:
-#       - app-network
+#       - "5432:5432"
+#     volumes:
+#       - pgdata:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD", "pg_isready", "-U", "postgres"]
+#       interval: 5s
+#       timeout: 5s
+#       retries: 5
 
-# networks:
-#   app-network:
-#     driver: bridge
+#   app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     container_name: gallery-app
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     environment:
+#       DB_USERNAME: postgres
+#       DB_PASSWORD: example
+#       DB_NAME: postgres
+#       DB_HOST: db
+#       DB_PORT: 5432
+#       AWS_REGION: eu-west-1
+#       S3_BUCKET_NAME: week6-images-upload
+#       PORT: 8080
+#       GIN_MODE: release
+#     ports:
+#       - "8081:8081"
+#     restart: on-failure
+#     # command: ["go", "run", "main.go"]  # change this if your entrypoint differs
+
+# volumes:
+  # pgdata:
 
 
 services:
